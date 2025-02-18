@@ -1,0 +1,5 @@
+快速生成exe文件指令；
+1.环境变量未设置情况
+2.单独打包资源到exe
+3.打包一个pygame的库到exe中
+python -m PyInstaller --onefile --add-data "D:/pythontest/flappy_bird/music/start_music.mp3;music" --add-data "D:/pythontest/flappy_bird/music/game_music.mp3;music" --add-data "D:/pythontest/flappy_bird/sound/jump.mp3;sound" --add-data "D:/pythontest/flappy_bird/sound/coin.mp3;sound" --add-data "D:/pythontest/flappy_bird/sound/game_over.mp3;sound" --add-data "D:/pythontest/flappy_bird/pic/bird.png;pic" --add-data "D:/pythontest/flappy_bird/pic/tube_up.png;pic" --add-data "D:/pythontest/flappy_bird/pic/tube_down.png;pic" --add-data "D:/pythontest/flappy_bird/pic/coin.png;pic" --add-data "D:/pythontest/flappy_bird/pic/restart_button.png;pic" --add-data "D:/pythontest/flappy_bird/pic/background.png;pic" --add-data "D:/pythontest/flappy_bird/pic/frame1.png;pic" --add-data "D:/pythontest/flappy_bird/pic/frame2.png;pic" --add-data "D:/pythontest/flappy_bird/pic/frame3.png;pic" --add-data "D:/pythontest/flappy_bird/pic/start_button.png;pic" --hidden-import pygame  main.py
