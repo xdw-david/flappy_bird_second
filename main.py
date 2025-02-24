@@ -196,11 +196,26 @@ class Tube:
 
 # 金币类
 class Coin:
-    def __init__(self):
+    def __init__(self,tubes):
         self.x = random.randint(WIDTH, WIDTH + 1000)
         self.y = random.randint(50, HEIGHT - 50)
+        self.generate_position(tubes)
         self.speed = 5
 
+    def generate_position(self, tubes):
+        while True:
+            self.x = random.randint(WIDTH, WIDTH + 1000)
+            self.y = random.randint(50, HEIGHT - 50)
+            overlapping = False
+
+            for tube in tubes:
+                if (self.x > tube.x and self.x < tube.x + tube.width) and \
+                   (self.y > tube.top and self.y < tube.bottom):
+                    overlapping = True
+                    break
+
+            if not overlapping:
+                break
     def show(self):
         screen.blit(coin_image, (self.x, self.y))
 
@@ -224,7 +239,8 @@ bg_speed = 2
 def reset_game():
     global bird, coins, tubes, score, bg_x1, bg_x2, running
     bird = Bird()
-    coins = [Coin() for _ in range(5)]
+    tubes = [Tube()]
+    coins = [Coin(tubes) for _ in range(5)]
     tubes = [Tube()]
     score = 0
     bg_x1 = 0
@@ -307,7 +323,7 @@ while True:
             coin.show() 
             if coin.offscreen(): 
                 coins.remove(coin) 
-                coins.append(Coin())
+                coins.append(Coin(tubes))
             if coin.collect(bird): 
                 coins.remove(coin) 
                 score += 5  # 吃掉金币加5分
