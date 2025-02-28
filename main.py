@@ -66,6 +66,15 @@ pipe_bottom_image = pygame.transform.scale(pipe_bottom_image, (80, 400))
 coin_image = pygame.image.load(resource_path('pic/coin.png'))
 coin_image = pygame.transform.scale(coin_image, (15, 30))
 
+# 加载宝箱和法杖图像
+chest_image = pygame.image.load(resource_path('pic/chest.png'))
+chest_image = pygame.transform.scale(chest_image, (100, 100))
+chest_rect = chest_image.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+
+wand_image = pygame.image.load(resource_path('pic/wand.png'))
+wand_image = pygame.transform.scale(wand_image, (100, 100))
+wand_rect = wand_image.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+
 # **加载“再来一次”按钮图像**
 restart_button_image = pygame.image.load(resource_path('pic/restart_button.png'))  # **添加这行**
 restart_button_image = pygame.transform.scale(restart_button_image, (100, 100))  # **调整按钮大小**
@@ -84,11 +93,40 @@ frames = [
 
 # 加载并缩放按钮图像 
 button_image = pygame.image.load(resource_path('pic/start_button.png'))
-button_image = pygame.transform.scale(button_image, (100, 100))  # 调整按钮大小 
+button_image = pygame.transform.scale(button_image, (200, 200))  # 调整按钮大小 
 button_rect = button_image.get_rect(center=(WIDTH // 2, HEIGHT // 1.5))
 
 # 缩放动画帧 
 frames = [pygame.transform.scale(frame, (WIDTH, HEIGHT)) for frame in frames]
+
+#展示宝箱
+def show_chest():
+    screen.blit(chest_image, chest_rect.topleft)
+    pygame.display.flip()
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if chest_rect.collidepoint(event.pos):
+                    fade_out(chest_image)
+                    show_wand()
+                    return
+                
+
+
+#展示魔杖
+def show_wand():
+    alpha = 0
+    while alpha < 255:
+        temp_image = wand_image.copy()
+        temp_image.set_alpha(alpha)
+        screen.blit(temp_image, wand_rect.topleft)
+        pygame.display.flip()
+        alpha += 5
+        clock.tick(30)
+
 
 
 # 渐入效果
@@ -332,6 +370,11 @@ while True:
         # 显示分数
         score_text = font.render(f'Score: {score}', True, (0, 0, 0))
         screen.blit(score_text, (10, 10))
+
+        #分数大于100到达结算界面
+        if score>=10:
+            show_chest()
+            running=False
 
         pygame.display.flip()
         clock.tick(30)
