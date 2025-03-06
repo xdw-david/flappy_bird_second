@@ -72,7 +72,7 @@ chest_image = pygame.transform.scale(chest_image, (100, 100))
 chest_rect = chest_image.get_rect(center=(WIDTH // 2, HEIGHT // 2))
 
 wand_image = pygame.image.load(resource_path('pic/wand.png'))
-wand_image = pygame.transform.scale(wand_image, (100, 100))
+wand_image = pygame.transform.scale(wand_image, (100, 200))
 wand_rect = wand_image.get_rect(center=(WIDTH // 2, HEIGHT // 2))
 
 # **加载“再来一次”按钮图像**
@@ -82,6 +82,10 @@ restart_button_rect = restart_button_image.get_rect(center=(WIDTH // 2, HEIGHT /
 
 # 游戏时钟
 clock = pygame.time.Clock()
+
+#定义一个全局变量用于暂停
+paused = False
+
 
 # 加载动画帧 
 frames = [ 
@@ -101,8 +105,13 @@ frames = [pygame.transform.scale(frame, (WIDTH, HEIGHT)) for frame in frames]
 
 #展示宝箱
 def show_chest():
+    global paused  # 声明全局变量
+    global game_over  # 声明全局变量
     screen.blit(chest_image, chest_rect.topleft)
     pygame.display.flip()
+    pygame.mixer.music.stop()  # 停止当前音乐
+    pygame.mixer.music.load(resource_path('music/win_music.mp3'))  # 加载游戏进行中的音乐
+    pygame.mixer.music.play(-1)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -112,12 +121,18 @@ def show_chest():
                 if chest_rect.collidepoint(event.pos):
                     fade_out(chest_image)
                     show_wand()
+                    paused=True #游戏结束标志
+                    game_over=True#确保不会再开始
                     return
                 
 
 
 #展示魔杖
 def show_wand():
+    global paused  # 声明为全局变量
+    #在生成法杖之前先清空桌面
+    screen.blit(background_image,(0,0))
+    pygame.display.flip()
     alpha = 0
     while alpha < 255:
         temp_image = wand_image.copy()
@@ -126,6 +141,7 @@ def show_wand():
         pygame.display.flip()
         alpha += 5
         clock.tick(30)
+    paused=True
 
 
 
@@ -135,7 +151,8 @@ def fade_in(frame, duration=1.0):
         temp_frame = frame.copy()
         temp_frame.set_alpha(alpha)
         screen.blit(temp_frame, (0, 0))
-        screen.blit(button_image, button_rect.topleft)  # 在动画帧上绘制按钮
+        if not paused:
+            screen.blit(button_image, button_rect.topleft)  # 在动画帧上绘制按钮
         pygame.display.flip()
         clock.tick(30)
 
@@ -145,7 +162,8 @@ def fade_out(frame, duration=1.0):
         temp_frame = frame.copy()
         temp_frame.set_alpha(alpha)
         screen.blit(temp_frame, (0, 0))
-        screen.blit(button_image, button_rect.topleft)  # 在动画帧上绘制按钮
+        if not paused:
+            screen.blit(button_image, button_rect.topleft)  # 在动画帧上绘制按钮
         pygame.display.flip()
         clock.tick(30)
 
@@ -275,7 +293,7 @@ bg_speed = 2
 
 # **添加函数：重置游戏**
 def reset_game():
-    global bird, coins, tubes, score, bg_x1, bg_x2, running
+    global bird, coins, tubes, score, bg_x1, bg_x2, running, paused
     bird = Bird()
     tubes = [Tube()]
     coins = [Coin(tubes) for _ in range(5)]
@@ -284,6 +302,7 @@ def reset_game():
     bg_x1 = 0
     bg_x2 = WIDTH
     running = True
+    paused=False
 
 # **添加函数：显示游戏结束画面**
 def show_game_over():
@@ -313,7 +332,9 @@ reset_game()
 play_intro()  # 播放开头动画 
 
 # **修改循环结构**
+# 修改后的主循环结构
 while True:
+    # 内层主游戏循环：仅在 running 为 True 且未暂停时运行
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -323,6 +344,10 @@ while True:
                 if event.key == pygame.K_SPACE:
                     bird.up()
                     jump_sound.play()  # 播放跳跃音效
+
+        # 如果 paused 已经为 True，则结束内层循环
+        if paused:
+            break
 
         bird.update()
 
@@ -337,9 +362,11 @@ while True:
             if tube.offscreen():
                 tubes.remove(tube)
                 score += 1
+
         if bird.y >= HEIGHT or bird.y <= 0:
             game_over_sound.play()  # 播放游戏结束音效
             running = False
+
         bg_x1 -= bg_speed
         bg_x2 -= bg_speed
         if bg_x1 < -WIDTH:
@@ -355,15 +382,15 @@ while True:
         for tube in tubes:
             tube.show()
 
-        # 更新并绘制金币 
-        for coin in coins: 
-            coin.update() 
-            coin.show() 
-            if coin.offscreen(): 
-                coins.remove(coin) 
+        # 更新并绘制金币
+        for coin in coins:
+            coin.update()
+            coin.show()
+            if coin.offscreen():
+                coins.remove(coin)
                 coins.append(Coin(tubes))
-            if coin.collect(bird): 
-                coins.remove(coin) 
+            if coin.collect(bird):
+                coins.remove(coin)
                 score += 5  # 吃掉金币加5分
                 coin_sound.play()  # 播放吃金币音效
 
@@ -371,16 +398,18 @@ while True:
         score_text = font.render(f'Score: {score}', True, (0, 0, 0))
         screen.blit(score_text, (10, 10))
 
-        #分数大于100到达结算界面
-        if score>=10:
-            show_chest()
-            running=False
+        # 分数达到目标时，显示宝箱（进而会显示魔杖，并将 paused 置为 True）
+        if score >= 10:
+            show_chest()  # 内部会调用 show_wand() 并设置 paused = True
+            # running = False  # 置为 False 表示游戏逻辑结束
+            paused=True
 
         pygame.display.flip()
         clock.tick(30)
 
-    # **显示游戏结束画面**
-        if not running:
-            show_game_over()
+    # 内部循环结束后，根据 paused 状态判断：
+    if not running:
+        show_game_over()
 
 pygame.quit()
+
